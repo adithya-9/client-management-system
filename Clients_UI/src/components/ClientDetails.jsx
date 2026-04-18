@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { clientAPI } from '../services/clientAPI';
+import ServicesList from './ServicesList';
 
 const ClientDetails = ({ clientId, onBack, onClientDeleted }) => {
   const [client, setClient] = useState(null);
@@ -88,21 +89,22 @@ const ClientDetails = ({ clientId, onBack, onClientDeleted }) => {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-8">
-      <button
-        onClick={onBack}
-        className="mb-6 text-blue-600 hover:text-blue-800 font-semibold flex items-center"
-      >
-        ← Back to Clients
-      </button>
+    <div className="space-y-8">
+      <div className="bg-white rounded-lg shadow-md p-8">
+        <button
+          onClick={onBack}
+          className="mb-6 text-blue-600 hover:text-blue-800 font-semibold flex items-center"
+        >
+          ← Back to Clients
+        </button>
 
-      {deleteMessage && (
-        <div className={`mb-6 p-4 rounded-lg ${deleteMessage.includes('✅') ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
-          {deleteMessage}
-        </div>
-      )}
+        {deleteMessage && (
+          <div className={`mb-6 p-4 rounded-lg ${deleteMessage.includes('✅') ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
+            {deleteMessage}
+          </div>
+        )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Left Column - Basic Info */}
         <div>
           <h2 className="text-3xl font-bold text-gray-900 mb-2">{client.clientName}</h2>
@@ -228,6 +230,12 @@ const ClientDetails = ({ clientId, onBack, onClientDeleted }) => {
             )}
           </div>
         </div>
+      </div>
+      </div>
+
+      {/* Services Section */}
+      <div>
+        <ServicesList clientId={clientId} onServiceDeleted={onClientDeleted} />
       </div>
     </div>
   );
