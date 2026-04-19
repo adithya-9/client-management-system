@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { adminAPI } from '../services/adminAPI';
+import { authService } from '../services/authService';
 
 const LoginForm = ({ onBackClick, onLoginSuccess }) => {
   const [formData, setFormData] = useState({
@@ -42,6 +43,15 @@ const LoginForm = ({ onBackClick, onLoginSuccess }) => {
 
     try {
       const response = await adminAPI.signIn(formData.email, formData.password);
+      const loginResponse = response.data.data; // Contains token and admin info
+      
+      // Store JWT token and admin info
+      authService.setToken(loginResponse.token, {
+        adminId: loginResponse.adminId,
+        email: loginResponse.email,
+        name: loginResponse.name,
+        role: loginResponse.role
+      });
       
       setMessageType('success');
       setMessage('✅ Welcome back Admin!');
@@ -55,7 +65,7 @@ const LoginForm = ({ onBackClick, onLoginSuccess }) => {
       // Notify parent to navigate to dashboard
       setTimeout(() => {
         if (onLoginSuccess) {
-          onLoginSuccess(response.data.data);
+          onLoginSuccess(loginResponse);
         }
       }, 1000);
 

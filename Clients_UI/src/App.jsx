@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import EntryPage from './components/EntryPage';
 import LoginForm from './components/LoginForm';
 import AdminForm from './components/AdminForm';
 import ClientForm from './components/ClientForm';
 import ClientsList from './components/ClientsList';
 import ClientDetails from './components/ClientDetails';
+import { authService } from './services/authService';
+import { setupAxiosInterceptors } from './services/axiosInterceptor';
 
 function App() {
   // Main navigation state
@@ -12,6 +14,21 @@ function App() {
   const [selectedClientId, setSelectedClientId] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [welcomeMessage, setWelcomeMessage] = useState('');
+
+  // Initialize axios interceptor and check authentication on app load
+  useEffect(() => {
+    // Setup axios interceptors for JWT
+    setupAxiosInterceptors();
+
+    // Check if user is already authenticated (token exists)
+    if (authService.isAuthenticated()) {
+      const adminInfo = authService.getAdminInfo();
+      if (adminInfo) {
+        setWelcomeMessage(`Welcome back ${adminInfo.name || adminInfo.email}!`);
+        setCurrentView('dashboard');
+      }
+    }
+  }, []);
 
   // Entry Page: Navigate to Login
   const handleLoginClick = () => {
@@ -64,8 +81,22 @@ function App() {
 
   // Dashboard: Logout
   const handleLogout = () => {
+    // Clear JWT token and admin info from localStorage
+    authService.clearToken();
     setWelcomeMessage('');
     setCurrentView('entry');
+  };
+
+  // Helper: Check if user is authenticated
+  const isAuthenticated = authService.isAuthenticated();
+
+  // Helper: Redirect to entry if trying to access protected route without auth
+  const handleProtectedView = (view) => {
+    if (!isAuthenticated) {
+      setCurrentView('entry');
+      return;
+    }
+    setCurrentView(view);
   };
 
   return (
@@ -94,8 +125,8 @@ function App() {
         />
       )}
 
-      {/* Dashboard */}
-      {currentView === 'dashboard' && (
+      {/* Dashboard - Protected with authentication check */}
+      {currentView === 'dashboard' && isAuthenticated && (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-8 px-4">
           <div className="max-w-6xl mx-auto">
             {/* Header */}
@@ -133,8 +164,8 @@ function App() {
         </div>
       )}
 
-      {/* Client Details Page */}
-      {currentView === 'details' && (
+      {/* Client Details Page - Protected with authentication check */}
+      {currentView === 'details' && isAuthenticated && (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-8 px-4">
           <div className="max-w-6xl mx-auto">
             <div className="mb-8 flex justify-between items-center">

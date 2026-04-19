@@ -1,5 +1,6 @@
 package com.eswaradithya.clients.controller;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -9,9 +10,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.eswaradithya.clients.entity.Admins;
 import com.eswaradithya.clients.models.AdminRequestDTO;
+import com.eswaradithya.clients.models.LoginResponseDTO;
 import com.eswaradithya.clients.models.SignInRequestDTO;
 import com.eswaradithya.clients.service.AdminService;
 import com.eswaradithya.clients.utils.APIResponse;
+import com.eswaradithya.clients.utils.JwtTokenProvider;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +26,10 @@ import lombok.extern.slf4j.Slf4j;
 public class AdminController {
 
 	private final AdminService adminService;
+	private final JwtTokenProvider jwtTokenProvider;
+
+	@Value("${jwt.expiration:86400000}")
+	private long jwtExpirationInMs;
 
 	@PostMapping("/save")
 	public ResponseEntity<APIResponse<Admins>> createAdminAccount(@RequestBody AdminRequestDTO request) {
@@ -43,18 +50,24 @@ public class AdminController {
 	}
 
 	/**
-	 * Admin sign-in endpoint
+	 * Admin sign-in endpoint with JWT token generation
 	 * 
 	 * @param request SignInRequestDTO with email and password
-	 * @return ResponseEntity with APIResponse containing Admins object if successful
+	 * @return ResponseEntity with APIResponse containing LoginResponseDTO with JWT token
 	 */
 	@PostMapping("/sign-in")
-	public ResponseEntity<APIResponse<Admins>> signIn(@RequestBody SignInRequestDTO request) {
+	public ResponseEntity<APIResponse<LoginResponseDTO>> signIn(@RequestBody SignInRequestDTO request) {
 		try {
 			log.info("Admin sign-in attempt for email: {}", request.getEmail());
 			Admins admin = adminService.signIn(request);
+			
+			// Generate JWT token
+			String token = jwtTokenProvider.generateToken(admin.getAdminId(), admin.getEmail());
+			LoginResponseDTO response = LoginResponseDTO.from(admin, token, jwtExpirationInMs);
+			
+			log.info("Admin signed in successfully: {}", request.getEmail());
 			return ResponseEntity.status(HttpStatus.OK)
-					.body(APIResponse.success(2000, "Sign-in successful", admin));
+					.body(APIResponse.success(2000, "Sign-in successful", response));
 
 		} catch (RuntimeException ex) {
 			log.error("Sign-in failed: {}", ex.getMessage());
