@@ -15,7 +15,7 @@ export const setupAxiosInterceptors = () => {
   // Request interceptor - Add Authorization header with JWT token
   axios.interceptors.request.use(
     (config) => {
-      const token = authService.getToken();
+      const token = authService.getToken(); // This now validates token expiration
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -31,12 +31,12 @@ export const setupAxiosInterceptors = () => {
     (response) => response,
     (error) => {
       if (error.response?.status === 401) {
-        // Token is invalid or expired
+        // Token is invalid, expired, or unauthorized
         console.error('Token expired or invalid. Clearing auth data.');
         authService.clearToken();
         
-        // Redirect to login page (optional)
-        // window.location.href = '/login';
+        // Optionally reload page to show login form
+        // window.location.href = '/';
       }
       return Promise.reject(error);
     }

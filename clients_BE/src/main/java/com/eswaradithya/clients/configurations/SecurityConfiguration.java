@@ -53,6 +53,7 @@ public class SecurityConfiguration {
 				// Public endpoints - no authentication required
 				.requestMatchers(HttpMethod.POST, "/eswaradithya/admins/sign-in").permitAll()
 				.requestMatchers(HttpMethod.POST, "/eswaradithya/admins/save").permitAll()
+				.requestMatchers(HttpMethod.GET, "/eswaradithya/admins/verify-token").permitAll()
 				// All other endpoints require authentication
 				.anyRequest().authenticated()
 			)

@@ -7,26 +7,93 @@ import ClientsList from './components/ClientsList';
 import ClientDetails from './components/ClientDetails';
 import { authService } from './services/authService';
 import { setupAxiosInterceptors } from './services/axiosInterceptor';
+import { adminAPI } from './services/adminAPI';
 
 function App() {
   // Main navigation state
-  const [currentView, setCurrentView] = useState('entry'); // 'entry', 'login', 'signup', 'dashboard', 'details'
+  const [currentView, setCurrentView] = useState('loading'); // 'loading', 'entry', 'login', 'signup', 'dashboard', 'details'
   const [selectedClientId, setSelectedClientId] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [welcomeMessage, setWelcomeMessage] = useState('');
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
+
+  // Save current view and client ID to sessionStorage whenever they change
+  useEffect(() => {
+    if (currentView !== 'loading') {
+      sessionStorage.setItem('lastView', currentView);
+      if (selectedClientId) {
+        sessionStorage.setItem('lastSelectedClientId', selectedClientId);
+      }
+    }
+  }, [currentView, selectedClientId]);
 
   // Initialize axios interceptor and check authentication on app load
   useEffect(() => {
     // Setup axios interceptors for JWT
     setupAxiosInterceptors();
 
-    // Check if user is already authenticated (token exists)
-    if (authService.isAuthenticated()) {
-      const adminInfo = authService.getAdminInfo();
-      if (adminInfo) {
-        setWelcomeMessage(`Welcome back ${adminInfo.name || adminInfo.email}!`);
-        setCurrentView('dashboard');
-      }
+    // Check if user has a token in sessionStorage
+    const hasToken = !!sessionStorage.getItem('jwt_token');
+    console.log('Checking authentication:', { hasToken });
+
+    if (hasToken) {
+      // Try to fetch clients list - if it works, token is valid
+      fetch('http://localhost:8080/eswaradithya/clients/all', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${sessionStorage.getItem('jwt_token')}`
+        }
+      })
+        .then((response) => {
+          if (response.ok) {
+            // Token is valid - restore previous view
+            console.log('Token verified - user authenticated');
+            const adminInfo = authService.getAdminInfo();
+            if (adminInfo && adminInfo.email) {
+              setWelcomeMessage(`Welcome back ${adminInfo.name || adminInfo.email}!`);
+              
+              // Restore previous view from sessionStorage
+              const lastView = sessionStorage.getItem('lastView');
+              const lastClientId = sessionStorage.getItem('lastSelectedClientId');
+              
+              if (lastView === 'details' && lastClientId) {
+                setSelectedClientId(parseInt(lastClientId));
+                setCurrentView('details');
+              } else {
+                setCurrentView('dashboard');
+              }
+            }
+            setIsAuthChecking(false);
+          } else if (response.status === 401) {
+            // Token is invalid/expired
+            console.error('Token is invalid or expired');
+            authService.clearToken();
+            sessionStorage.removeItem('lastView');
+            sessionStorage.removeItem('lastSelectedClientId');
+            setCurrentView('entry');
+            setIsAuthChecking(false);
+          } else {
+            // Other error
+            console.error('Error verifying token:', response.status);
+            setCurrentView('entry');
+            setIsAuthChecking(false);
+          }
+        })
+        .catch((error) => {
+          console.error('Token verification failed:', error.message);
+          authService.clearToken();
+          sessionStorage.removeItem('lastView');
+          sessionStorage.removeItem('lastSelectedClientId');
+          setCurrentView('entry');
+          setIsAuthChecking(false);
+        });
+    } else {
+      // No token found - show entry page
+      console.log('No token found. Showing entry page.');
+      sessionStorage.removeItem('lastView');
+      sessionStorage.removeItem('lastSelectedClientId');
+      setCurrentView('entry');
+      setIsAuthChecking(false);
     }
   }, []);
 
@@ -81,8 +148,11 @@ function App() {
 
   // Dashboard: Logout
   const handleLogout = () => {
-    // Clear JWT token and admin info from localStorage
+    // Clear JWT token and admin info
     authService.clearToken();
+    // Clear saved view state
+    sessionStorage.removeItem('lastView');
+    sessionStorage.removeItem('lastSelectedClientId');
     setWelcomeMessage('');
     setCurrentView('entry');
   };
@@ -101,8 +171,18 @@ function App() {
 
   return (
     <>
+      {/* Loading Screen - Show while checking authentication */}
+      {isAuthChecking && (
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-blue-600 border-t-transparent mb-6"></div>
+            <p className="text-white text-xl font-semibold">Verifying authentication...</p>
+          </div>
+        </div>
+      )}
+
       {/* Entry Page */}
-      {currentView === 'entry' && (
+      {currentView === 'entry' && !isAuthChecking && (
         <EntryPage 
           onLoginClick={handleLoginClick}
           onSignUpClick={handleSignUpClick}
@@ -110,7 +190,7 @@ function App() {
       )}
 
       {/* Login Page */}
-      {currentView === 'login' && (
+      {currentView === 'login' && !isAuthChecking && (
         <LoginForm
           onBackClick={handleLoginBack}
           onLoginSuccess={handleLoginSuccess}
@@ -118,7 +198,7 @@ function App() {
       )}
 
       {/* Sign-Up Page */}
-      {currentView === 'signup' && (
+      {currentView === 'signup' && !isAuthChecking && (
         <AdminForm
           onBackClick={handleSignUpBack}
           onSignUpSuccess={handleSignUpSuccess}
@@ -126,7 +206,7 @@ function App() {
       )}
 
       {/* Dashboard - Protected with authentication check */}
-      {currentView === 'dashboard' && isAuthenticated && (
+      {currentView === 'dashboard' && isAuthenticated && !isAuthChecking && (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-8 px-4">
           <div className="max-w-6xl mx-auto">
             {/* Header */}
@@ -165,7 +245,7 @@ function App() {
       )}
 
       {/* Client Details Page - Protected with authentication check */}
-      {currentView === 'details' && isAuthenticated && (
+      {currentView === 'details' && isAuthenticated && !isAuthChecking && (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-8 px-4">
           <div className="max-w-6xl mx-auto">
             <div className="mb-8 flex justify-between items-center">
