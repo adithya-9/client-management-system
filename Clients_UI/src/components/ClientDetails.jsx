@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { clientAPI } from '../services/clientAPI';
 import ServicesList from './ServicesList';
+import PaymentsList from './PaymentsList';
+import PaymentsOverview from './PaymentsOverview';
 
 const ClientDetails = ({ clientId, onBack, onClientDeleted }) => {
   const [client, setClient] = useState(null);
@@ -236,6 +238,16 @@ const ClientDetails = ({ clientId, onBack, onClientDeleted }) => {
       {/* Services Section */}
       <div>
         <ServicesList clientId={clientId} onServiceDeleted={onClientDeleted} />
+      </div>
+
+      {/* Payments Overview */}
+      <div>
+        <PaymentsOverview clientId={clientId} />
+      </div>
+
+      {/* Payments Section */}
+      <div>
+        <PaymentsList clientId={clientId} />
       </div>
     </div>
   );

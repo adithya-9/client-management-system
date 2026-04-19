@@ -32,4 +32,9 @@ public interface ServiceService {
      * Delete a service
      */
     void deleteService(Long serviceId);
+    
+    /**
+     * Get all services across all clients (non-paginated)
+     */
+    java.util.List<ServiceResponseDTO> getAllServices();
 }

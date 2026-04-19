@@ -33,5 +33,10 @@ export const servicesAPI = {
   // Delete a service
   deleteService: (serviceId) => {
     return axios.delete(`${API_BASE_URL}/${serviceId}`);
+  },
+
+  // Get all services across all clients (non-paginated)
+  getAllServices: () => {
+    return axios.get(`${API_BASE_URL}/all`);
   }
 };

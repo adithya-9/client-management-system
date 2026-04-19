@@ -69,4 +69,13 @@ public class Clients {
 	@JsonIgnore
 	@OneToMany(mappedBy = "client", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<Services> services = new ArrayList<>();
+
+	/**
+	 * One-to-Many relationship with Payments
+	 * One client can have multiple payments for their services
+	 * Cascade delete: when client is deleted, all associated payments are deleted
+	 */
+	@JsonIgnore
+	@OneToMany(mappedBy = "client", cascade = CascadeType.ALL, orphanRemoval = true)
+	private List<Payments> payments = new ArrayList<>();
 }

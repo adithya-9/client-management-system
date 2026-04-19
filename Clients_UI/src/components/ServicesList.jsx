@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { servicesAPI } from '../services/servicesAPI';
+import { paymentAPI } from '../services/paymentAPI';
 import AddServiceForm from './AddServiceForm';
 
 const ServicesList = ({ clientId, onServiceDeleted }) => {
   const [services, setServices] = useState([]);
+  const [paymentTotals, setPaymentTotals] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -14,22 +16,45 @@ const ServicesList = ({ clientId, onServiceDeleted }) => {
   const [totalPages, setTotalPages] = useState(0);
   const pageSize = 10;
 
+  const fetchPaymentTotals = useCallback(async (serviceList) => {
+    try {
+      const totals = {};
+      for (const service of serviceList) {
+        try {
+          const response = await paymentAPI.getTotalPaymentForService(service.serviceId);
+          totals[service.serviceId] = response.data?.data || 0;
+        } catch (err) {
+          totals[service.serviceId] = 0;
+        }
+      }
+      setPaymentTotals(totals);
+    } catch (err) {
+      console.error('Error fetching payment totals:', err);
+    }
+  }, []);
+
   const fetchServices = useCallback(async (page = 0) => {
     setLoading(true);
     setError(null);
     try {
       const response = await servicesAPI.getServicesByClient(clientId, page, pageSize);
       const pageData = response.data.data;
-      setServices(pageData.content || []);
+      const serviceList = pageData.content || [];
+      setServices(serviceList);
       setTotalPages(pageData.totalPages || 1);
       setCurrentPage(page);
+      
+      // Load payment totals for these services
+      if (serviceList.length > 0) {
+        fetchPaymentTotals(serviceList);
+      }
     } catch (err) {
       setError('Failed to fetch services');
       console.error('Error fetching services:', err);
     } finally {
       setLoading(false);
     }
-  }, [clientId]);
+  }, [clientId, fetchPaymentTotals]);
 
   useEffect(() => {
     fetchServices();
@@ -172,6 +197,7 @@ const ServicesList = ({ clientId, onServiceDeleted }) => {
                 <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Provider</th>
                 <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Expiry Date</th>
                 <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Price</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Payments</th>
                 <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
                 <th className="px-6 py-3 text-center text-sm font-semibold text-gray-700">Actions</th>
               </tr>
@@ -211,6 +237,11 @@ const ServicesList = ({ clientId, onServiceDeleted }) => {
                   </td>
                   <td className="px-6 py-4 text-sm font-semibold text-gray-900">
                     {formatCurrency(service.price)}
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="text-sm font-semibold text-green-700 bg-green-50 px-3 py-1 rounded-full">
+                      💳 {formatCurrency(paymentTotals[service.serviceId] || 0)}
+                    </span>
                   </td>
                   <td className="px-6 py-4">
                     <span

@@ -62,12 +62,10 @@ const LoginForm = ({ onBackClick, onLoginSuccess }) => {
         password: ''
       });
 
-      // Notify parent to navigate to dashboard
-      setTimeout(() => {
-        if (onLoginSuccess) {
-          onLoginSuccess(loginResponse);
-        }
-      }, 1000);
+      // Notify parent to navigate to dashboard immediately
+      if (onLoginSuccess) {
+        onLoginSuccess(loginResponse);
+      }
 
     } catch (error) {
       setMessageType('error');
