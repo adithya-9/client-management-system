@@ -76,6 +76,21 @@ public class ServiceController {
 		}
 	}
 
+	@GetMapping("/all")
+	public ResponseEntity<APIResponse<java.util.List<ServiceResponseDTO>>> getAllServices() {
+		try {
+			log.info("Fetching all services");
+			java.util.List<ServiceResponseDTO> services = serviceService.getAllServices();
+			return ResponseEntity.status(HttpStatus.OK)
+					.body(APIResponse.success(2000, "All services retrieved successfully", services));
+
+		} catch (Exception ex) {
+			log.error("Unexpected error while retrieving all services: {}", ex.getMessage(), ex);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body(APIResponse.error(5001, "Something went wrong"));
+		}
+	}
+
 	@GetMapping("/{serviceId}")
 	public ResponseEntity<APIResponse<ServiceResponseDTO>> getServiceById(@PathVariable Long serviceId) {
 		try {

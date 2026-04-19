@@ -145,6 +145,16 @@ public class ServiceServiceImpl implements ServiceService {
 		log.info("Service deleted successfully with ID: {}", serviceId);
 	}
 
+	@Override
+	public java.util.List<ServiceResponseDTO> getAllServices() {
+		log.info("Fetching all services across all clients");
+
+		java.util.List<Services> services = serviceRepository.findAll();
+		log.info("Retrieved {} services total", services.size());
+
+		return services.stream().map(this::mapToResponseDTO).collect(java.util.stream.Collectors.toList());
+	}
+
 	/**
 	 * Helper method to map Service entity to ServiceResponseDTO Also calculates
 	 * expiry status based on expiry date
